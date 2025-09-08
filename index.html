@@ -165,6 +165,8 @@
 
   <!-- APP LOGIC -->
   <script>
+    let FORCE_BUST = false; // khi true sẽ thêm ?ts=... vào mọi fetch
+
     // ====== CONFIG ======
     window.CONFIG = {
       owner: "your-github-username",
@@ -206,8 +208,10 @@
 
     function rawUrl(path){
       const {owner, repo, branch} = window.CONFIG;
-      return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+      const base = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+      return FORCE_BUST ? `${base}?ts=${Date.now()}` : base;
     }
+
 
     async function fetchText(path){
       const url = rawUrl(path);
@@ -333,7 +337,8 @@
       });
     }
 
-    async function refreshAll(){
+    async function refreshAll(bust = false){
+      FORCE_BUST = !!bust;               // bật cache-busting cho lần refresh này
       const repoLabel = `${CONFIG.owner}/${CONFIG.repo} @ ${CONFIG.branch}`;
       document.getElementById('repoLabel').textContent = repoLabel;
       document.getElementById('openRepo').href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}`;
@@ -352,20 +357,20 @@
       drawDonut('tasksChart', Math.round(parsed.avgPercent), 100, 'Hoàn thành %','Còn lại %');
       drawDonut('coverageChart', 72, 100, 'Covered %','Chưa cover %');
       document.getElementById('tasksNote').textContent = `Ước lượng hoàn thành ~${parsed.avgPercent}% (theo %Done của bảng PROGRESS)`;
+
+      FORCE_BUST = false;                // tắt lại cho lần fetch bình thường
     }
+
 
     document.addEventListener('DOMContentLoaded', ()=>{
       initRouter();
       renderOrg();
       refreshAll();
-      document.getElementById('refreshBtn').addEventListener('click', () => {
-        refreshAll().then(() => {
-          // Nếu đang ở tab Sprint thì force redraw
-          if (location.hash === '#sprint') {
-            renderSidebarState('#sprint');
-          }
-        });
+      document.getElementById('refreshBtn').addEventListener('click', async () => {
+        await refreshAll(true);                   // <= bust cache
+        if (location.hash === '#sprint') renderSidebarState('#sprint');
       });
+
     });
 
     function initRouter(){
@@ -426,10 +431,12 @@
       });
 
       // Nút Tải lại dữ liệu: cho cảm giác “refresh” tức thì
-      document.getElementById('cfg-reload')?.addEventListener('click', () => {
-        readFormToRuntimeConfig();
-        refreshAll();
+      document.getElementById('cfg-reload')?.addEventListener('click', async () => {
+        readFormToRuntimeConfig();  // lấy giá trị từ form -> localStorage -> merge vào CONFIG
+        await refreshAll(true);     // <= bust cache
+        if (location.hash === '#sprint') renderSidebarState('#sprint');
       });
+
     });
 
   </script>
