@@ -358,7 +358,14 @@
       initRouter();
       renderOrg();
       refreshAll();
-      document.getElementById('refreshBtn').addEventListener('click', refreshAll);
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        refreshAll().then(() => {
+          // Nếu đang ở tab Sprint thì force redraw
+          if (location.hash === '#sprint') {
+            renderSidebarState('#sprint');
+          }
+        });
+      });
     });
 
     function initRouter(){
