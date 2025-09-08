@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Company Dashboard — FULL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    :root{
+      --bg-main:#F5F5F3; --bg-sidebar:#E8E6E1; --bg-card:#FFFFFF;
+      --text-primary:#222; --text-secondary:#5a5a5a;
+      --accent:#4A5568; --accent-light:#718096; --border-color:#DCDCDC;
+    }
+    *{box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg-main);color:var(--text-primary)}
+    .bg-sidebar{background-color:var(--bg-sidebar)}
+    .bg-bg-card{background-color:var(--bg-card)}
+    .text-accent{color:var(--accent)}
+    .text-accent-light{color:var(--accent-light)}
+    .text-text-secondary{color:var(--text-secondary)}
+    .border-border-color{border-color:var(--border-color)}
+    .sidebar-item.active{background:var(--accent);color:#fff;font-weight:600}
+    .content-section{display:none}
+    .content-section.active{display:block}
+    .chart-container{position:relative;width:100%;max-width:420px;margin:0 auto;height:340px}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border:1px solid var(--border-color);border-radius:.6rem;background:#fff}
+    .btn:hover{border-color:var(--accent);}
+    code, pre{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="w-72 bg-sidebar p-5 flex-shrink-0 overflow-y-auto">
+    <h1 class="text-xl font-bold text-accent mb-6">AI Company Dashboard</h1>
+    <div class="space-y-2">
+      <a href="#overview" class="sidebar-item flex items-center p-3 rounded-lg transition-colors hover:bg-gray-300"><i class="fa-solid fa-gauge w-6"></i><span class="ml-3">Tổng quan</span></a>
+      <a href="#org" class="sidebar-item flex items-center p-3 rounded-lg transition-colors hover:bg-gray-300"><i class="fa-solid fa-sitemap w-6"></i><span class="ml-3">Cấu trúc Team</span></a>
+      <a href="#docs" class="sidebar-item flex items-center p-3 rounded-lg transition-colors hover:bg-gray-300"><i class="fa-solid fa-file-lines w-6"></i><span class="ml-3">Tài liệu</span></a>
+      <a href="#sprint" class="sidebar-item flex items-center p-3 rounded-lg transition-colors hover:bg-gray-300"><i class="fa-solid fa-sync w-6"></i><span class="ml-3">Quy trình Sprint</span></a>
+      <a href="#kpi" class="sidebar-item flex items-center p-3 rounded-lg transition-colors hover:bg-gray-300"><i class="fa-solid fa-chart-pie w-6"></i><span class="ml-3">KPI</span></a>
+      <a href="#settings" class="sidebar-item flex items-center p-3 rounded-lg transition-colors hover:bg-gray-300"><i class="fa-solid fa-gear w-6"></i><span class="ml-3">Cấu hình</span></a>
+    </div>
+    <div class="mt-6 p-3 rounded-lg bg-bg-card border border-border-color text-sm">
+      <div class="font-semibold mb-1">Repo</div>
+      <div id="repoLabel" class="text-text-secondary"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 p-8 overflow-y-auto">
+    <!-- OVERVIEW -->
+    <section id="overview" class="content-section">
+      <h2 class="text-3xl font-bold text-accent mb-2">Checklist Nền móng & Quy trình Team AI</h2>
+      <p class="text-text-secondary mb-4">Webapp “bảng điều khiển” đọc các file *.md từ repo GitHub: PLAN, ARCHITECTURE, TESTING, PROGRESS… để cả Gemini (Planner), ChatGPT (Architect/QA) và Copilot (Builder) phối hợp qua cùng một nguồn sự thật.</p>
+      <div class="flex flex-wrap gap-3">
+        <button id="refreshBtn" class="btn"><i class="fa-solid fa-rotate-right"></i>Tải lại dữ liệu</button>
+        <a id="openRepo" target="_blank" class="btn"><i class="fa-brands fa-github"></i> Mở repo</a>
+      </div>
+      <div id="overviewStatus" class="mt-4 text-sm text-text-secondary"></div>
+    </section>
+
+    <!-- ORG -->
+    <section id="org" class="content-section">
+      <h2 class="text-3xl font-bold text-accent mb-6">Cấu trúc tổ chức</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="orgGrid"></div>
+    </section>
+
+    <!-- DOCS -->
+    <section id="docs" class="content-section">
+      <h2 class="text-3xl font-bold text-accent mb-2">Tài liệu nền móng</h2>
+      <p class="text-text-secondary mb-6">Xem nhanh 20 dòng đầu của mỗi tài liệu. Bấm “Open in GitHub” để chỉnh sửa/PR.</p>
+      <div id="docsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- SPRINT -->
+    <section id="sprint" class="content-section">
+      <h2 class="text-3xl font-bold text-accent mb-2">Quy trình Sprint</h2>
+      <p class="text-text-secondary mb-6">Plan → Design → Build → Test → Deploy → Review</p>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-bg-card p-4 border border-border-color rounded-lg">
+          <h3 class="font-semibold mb-2">Hướng dẫn</h3>
+          <ul class="list-disc ml-5 text-sm text-text-secondary space-y-1">
+            <li>Planner cập nhật PLAN.md</li>
+            <li>Architect cập nhật ARCHITECTURE.md + prompts</li>
+            <li>Builder code theo kiến trúc</li>
+            <li>QA test & cập nhật TESTING.md</li>
+            <li>Ops deploy & ghi KPI</li>
+          </ul>
+        </div>
+        <div class="bg-bg-card p-4 border border-border-color rounded-lg">
+          <h3 class="font-semibold mb-2">Tiến độ Sprint</h3>
+          <div class="chart-container"><canvas id="progressChart"></canvas></div>
+          <div id="progressNote" class="text-center text-sm text-text-secondary mt-2"></div>
+        </div>
+        <div class="bg-bg-card p-4 border border-border-color rounded-lg">
+          <h3 class="font-semibold mb-2">Trích từ PROGRESS.md</h3>
+          <pre id="progressPreview" class="text-xs text-text-secondary overflow-auto max-h-64 whitespace-pre-wrap bg-gray-50 p-3 rounded"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI -->
+    <section id="kpi" class="content-section">
+      <h2 class="text-3xl font-bold text-accent mb-2">KPI</h2>
+      <p class="text-text-secondary mb-6">Hiển thị nhanh Coverage & Task completion dựa trên dữ liệu thật (khi có).</p>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-bg-card p-5 border border-border-color rounded-lg">
+          <h3 class="font-semibold text-center mb-2">Coverage (mục tiêu ≥ 70%)</h3>
+          <div class="chart-container"><canvas id="coverageChart"></canvas></div>
+          <div class="text-center text-sm text-text-secondary mt-2">Dữ liệu coverage thực có thể được cập nhật qua CI → lưu vào KPI_DASHBOARD.md hoặc JSON.</div>
+        </div>
+        <div class="bg-bg-card p-5 border border-border-color rounded-lg">
+          <h3 class="font-semibold text-center mb-2">Hoàn thành task</h3>
+          <div class="chart-container"><canvas id="tasksChart"></canvas></div>
+          <div id="tasksNote" class="text-center text-sm text-text-secondary mt-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="settings" class="content-section">
+      <h2 class="text-3xl font-bold text-accent mb-2">Cấu hình dữ liệu (Runtime)</h2>
+      <p class="text-text-secondary mb-4">Nhập cấu hình tại đây. Dữ liệu lưu cục bộ trong trình duyệt (localStorage).</p>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-bg-card p-5 border border-border-color rounded-lg">
+          <h3 class="font-semibold mb-3">Repo</h3>
+          <label class="block text-sm mb-1">Owner</label>
+          <input id="cfg-owner" class="w-full border border-border-color rounded p-2 mb-3" placeholder="hvduoc">
+          <label class="block text-sm mb-1">Repo</label>
+          <input id="cfg-repo" class="w-full border border-border-color rounded p-2 mb-3" placeholder="ai-foundation-all-in-one">
+          <label class="block text-sm mb-1">Branch</label>
+          <input id="cfg-branch" class="w-full border border-border-color rounded p-2 mb-3" placeholder="main">
+        </div>
+
+        <div class="bg-bg-card p-5 border border-border-color rounded-lg">
+          <h3 class="font-semibold mb-3">Đường dẫn file</h3>
+          <label class="block text-sm mb-1">PLAN.md</label>
+          <input id="cfg-plan" class="w-full border border-border-color rounded p-2 mb-3" placeholder="PLAN.md">
+          <label class="block text-sm mb-1">ARCHITECTURE.md</label>
+          <input id="cfg-arch" class="w-full border border-border-color rounded p-2 mb-3" placeholder="ARCHITECTURE.md">
+          <label class="block text-sm mb-1">TESTING.md</label>
+          <input id="cfg-testing" class="w-full border border-border-color rounded p-2 mb-3" placeholder="TESTING.md">
+          <label class="block text-sm mb-1">PROGRESS.md</label>
+          <input id="cfg-progress" class="w-full border border-border-color rounded p-2 mb-3" placeholder="PROGRESS.md">
+          <label class="block text-sm mb-1">KPI_DASHBOARD.md</label>
+          <input id="cfg-kpi" class="w-full border border-border-color rounded p-2 mb-3" placeholder="KPI_DASHBOARD.md">
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-4">
+        <button id="cfg-save" class="btn"><i class="fa-solid fa-floppy-disk"></i>Lưu cấu hình</button>
+        <button id="cfg-clear" class="btn"><i class="fa-solid fa-trash"></i>Xoá cấu hình đã lưu</button>
+        <button id="cfg-reload" class="btn"><i class="fa-solid fa-rotate-right"></i>Tải lại dữ liệu</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- APP LOGIC -->
+  <script>
+    // ====== CONFIG ======
+    window.CONFIG = {
+      owner: "your-github-username",
+      repo: "repo-name",
+      branch: "main",
+      files: { plan:"PLAN.md", arch:"ARCHITECTURE.md", testing:"TESTING.md", progress:"PROGRESS.md", kpi:"KPI_DASHBOARD.md" }
+    };
+    const LS_KEY = 'aiDashConfig';
+
+    function getEffectiveConfig(base) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        return {
+          ...base,
+          ...saved,
+          files: { ...(base.files||{}), ...((saved||{}).files||{}) }
+        };
+      } catch (_) {
+        return base;
+      }
+    }
+
+    // áp dụng cấu hình đã lưu (nếu có)
+    window.CONFIG = getEffectiveConfig(window.CONFIG);
+
+    // helpers cho Settings UI
+    function saveRuntimeConfig(obj) {
+      localStorage.setItem(LS_KEY, JSON.stringify(obj || {}));
+      // merge lại và làm mới
+      window.CONFIG = getEffectiveConfig(window.CONFIG);
+    }
+    function clearRuntimeConfig() {
+      localStorage.removeItem(LS_KEY);
+      window.CONFIG = getEffectiveConfig(window.CONFIG);
+    }
+
+    const $ = (sel)=>document.querySelector(sel);
+    const $$ = (sel)=>document.querySelectorAll(sel);
+
+    function rawUrl(path){
+      const {owner, repo, branch} = window.CONFIG;
+      return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+    }
+
+    async function fetchText(path){
+      const url = rawUrl(path);
+      try{
+        const res = await fetch(url, {cache:"no-store"});
+        if(!res.ok) throw new Error(res.status + " " + res.statusText);
+        return await res.text();
+      }catch(err){
+        return `⚠️ Không tải được ${path} — ${err.message}`;
+      }
+    }
+
+    function renderSidebarState(hash){
+      $$('.sidebar-item').forEach(i=>{
+        i.classList.toggle('active', i.getAttribute('href')===hash);
+      });
+      $$('.content-section').forEach(s=>{
+        s.classList.toggle('active', '#'+s.id===hash);
+      });
+      localStorage.setItem('aiDashTab', hash);
+    }
+
+    function initRouter(){
+      const items = $$('.sidebar-item');
+      items.forEach(a=>a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const hash = a.getAttribute('href');
+        history.pushState({}, '', hash);
+        renderSidebarState(hash);
+      }));
+      window.addEventListener('popstate', ()=>renderSidebarState(location.hash||'#overview'));
+      renderSidebarState(localStorage.getItem('aiDashTab') || '#overview');
+    }
+
+    const ORG = [
+      { name:'CEO', tool:'Anh', icon:'fa-crown', desc:'Định hướng, duyệt backlog/KPI, quyết định Sprint.' },
+      { name:'Planner', tool:'Gemini', icon:'fa-map-signs', desc:'Nghiên cứu, cập nhật PLAN.md, tạo backlog.' },
+      { name:'Architect', tool:'ChatGPT', icon:'fa-drafting-compass', desc:'Thiết kế ARCHITECTURE.md, prompts cho Builder/QA.' },
+      { name:'Builder', tool:'Copilot', icon:'fa-code', desc:'Implement src/ & tests/ theo kiến trúc.' },
+      { name:'QA', tool:'ChatGPT', icon:'fa-check-double', desc:'Test cases, cập nhật TESTING.md, báo bug.' },
+      { name:'Ops', tool:'CI/CD', icon:'fa-server', desc:'Deploy & analytics.' }
+    ];
+
+    function renderOrg(){
+      const grid = $('#orgGrid'); grid.innerHTML = '';
+      ORG.forEach(r=>{
+        const card = document.createElement('div');
+        card.className='bg-bg-card p-6 rounded-xl shadow border border-border-color hover:shadow-md transition';
+        card.innerHTML = `
+          <div class="flex items-center gap-3 mb-2">
+            <i class="fa-solid ${r.icon} text-2xl text-accent"></i>
+            <div class="font-semibold text-lg">${r.name}</div>
+          </div>
+          <div class="text-sm text-text-secondary mb-3">${r.desc}</div>
+          <div class="text-xs text-accent">Công cụ chính: ${r.tool}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function renderDocs(){
+      const files = window.CONFIG.files;
+      const list = [files.plan, files.arch, files.testing, files.progress];
+      const grid = $('#docsGrid'); grid.innerHTML='';
+      for(const f of list){
+        const txt = await fetchText(f);
+        const preview = txt.split('\\n').slice(0,20).join('\\n');
+        const card = document.createElement('div');
+        card.className='bg-bg-card p-5 rounded-xl shadow border border-border-color';
+        const url = rawUrl(f).replace('raw.githubusercontent.com','github.com').replace(`/${window.CONFIG.branch}/`, `/blob/${window.CONFIG.branch}/`);
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-semibold">${f}</div>
+            <a class="btn text-xs" href="${url}" target="_blank"><i class="fa-brands fa-github"></i>Open in GitHub</a>
+          </div>
+          <pre class="text-xs text-text-secondary whitespace-pre-wrap bg-gray-50 p-3 rounded max-h-56 overflow-auto">${preview}</pre>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function parseProgressTable(md){
+      // Simple parser for the first markdown table
+      const lines = md.split(/\\r?\\n/);
+      let start = -1;
+      for(let i=0;i<lines.length;i++){
+        if(/\\|.*\\|/.test(lines[i]) && /\\|.*\\|/.test(lines[i+1]||'') && /-+/.test(lines[i+1])){ start=i; break; }
+      }
+      if(start<0) return { tasks:[], completed:0, pending:0, avgPercent:0, raw:md };
+      const rows = [];
+      for(let i=start+2;i<lines.length;i++){
+        const ln = lines[i].trim();
+        if(!ln.startsWith('|')) break;
+        const cols = ln.split('|').slice(1,-1).map(s=>s.trim());
+        rows.push(cols);
+      }
+      const header = lines[start].split('|').slice(1,-1).map(s=>s.trim().toLowerCase());
+      const idxStatus = header.findIndex(h=>h.includes('status'));
+      const idxPercent = header.findIndex(h=>h.includes('%') || h.includes('percent'));
+      let completed=0, pending=0, percents=[];
+      rows.forEach(r=>{
+        const status = (r[idxStatus]||'').toLowerCase();
+        const pctStr = (r[idxPercent]||'').match(/(\\d+(\\.\\d+)?)/);
+        const pct = pctStr ? parseFloat(pctStr[1]) : (status.includes('done')?100: (status.includes('pending')?0:null));
+        if(status.includes('done') || (pct!==null && pct>=100)) completed++; else pending++;
+        if(pct!==null) percents.push(pct);
+      });
+      const avg = percents.length? (percents.reduce((a,b)=>a+b,0)/percents.length) : 0;
+      return { tasks:rows, completed, pending, avgPercent:Math.round(avg), raw: lines.slice(start).join('\\n') };
+    }
+
+    let charts = {};
+
+    function drawDonut(canvasId, value, total, labelDone='Done', labelPending='Pending'){
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const data = [value, Math.max(total-value,0)];
+      if(charts[canvasId]) charts[canvasId].destroy();
+      charts[canvasId] = new Chart(ctx, {
+        type:'doughnut',
+        data:{ labels:[labelDone,labelPending],
+          datasets:[{ data, borderColor:'#fff', borderWidth:3, backgroundColor:['#4A5568','#E2E8F0'] }]},
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'70%', plugins:{ legend:{display:false} } }
+      });
+    }
+
+    async function refreshAll(){
+      const repoLabel = `${CONFIG.owner}/${CONFIG.repo} @ ${CONFIG.branch}`;
+      document.getElementById('repoLabel').textContent = repoLabel;
+      document.getElementById('openRepo').href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}`;
+
+      document.getElementById('overviewStatus').textContent = 'Đang tải tài liệu…';
+      await renderDocs();
+      document.getElementById('overviewStatus').textContent = 'Đã tải xong tài liệu.';
+
+      const progressMd = await fetchText(CONFIG.files.progress);
+      const parsed = parseProgressTable(progressMd);
+      document.getElementById('progressPreview').textContent = parsed.raw || progressMd;
+
+      drawDonut('progressChart', parsed.completed, parsed.completed + parsed.pending, 'Hoàn thành','Chưa xong');
+      document.getElementById('progressNote').textContent = `Tasks: ${parsed.completed} hoàn thành / ${parsed.completed+parsed.pending} tổng • % trung bình: ${parsed.avgPercent}%`;
+
+      drawDonut('tasksChart', Math.round(parsed.avgPercent), 100, 'Hoàn thành %','Còn lại %');
+      drawDonut('coverageChart', 72, 100, 'Covered %','Chưa cover %');
+      document.getElementById('tasksNote').textContent = `Ước lượng hoàn thành ~${parsed.avgPercent}% (theo %Done của bảng PROGRESS)`;
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initRouter();
+      renderOrg();
+      refreshAll();
+      document.getElementById('refreshBtn').addEventListener('click', refreshAll);
+    });
+
+    function initRouter(){
+      const items = document.querySelectorAll('.sidebar-item');
+      items.forEach(a=>a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const hash = a.getAttribute('href');
+        history.pushState({}, '', hash);
+        renderSidebarState(hash);
+      }));
+      window.addEventListener('popstate', ()=>renderSidebarState(location.hash||'#overview'));
+      renderSidebarState(localStorage.getItem('aiDashTab') || '#overview');
+    }
+
+    function fillSettingsFormFromConfig() {
+      const cfg = window.CONFIG;
+      document.getElementById('cfg-owner').value    = cfg.owner || '';
+      document.getElementById('cfg-repo').value     = cfg.repo || '';
+      document.getElementById('cfg-branch').value   = cfg.branch || '';
+      document.getElementById('cfg-plan').value     = (cfg.files||{}).plan || 'PLAN.md';
+      document.getElementById('cfg-arch').value     = (cfg.files||{}).arch || 'ARCHITECTURE.md';
+      document.getElementById('cfg-testing').value  = (cfg.files||{}).testing || 'TESTING.md';
+      document.getElementById('cfg-progress').value = (cfg.files||{}).progress || 'PROGRESS.md';
+      document.getElementById('cfg-kpi').value      = (cfg.files||{}).kpi || 'KPI_DASHBOARD.md';
+    }
+
+    function readFormToRuntimeConfig() {
+      const cfg = {
+        owner  : document.getElementById('cfg-owner').value.trim(),
+        repo   : document.getElementById('cfg-repo').value.trim(),
+        branch : document.getElementById('cfg-branch').value.trim(),
+        files  : {
+          plan     : document.getElementById('cfg-plan').value.trim(),
+          arch     : document.getElementById('cfg-arch').value.trim(),
+          testing  : document.getElementById('cfg-testing').value.trim(),
+          progress : document.getElementById('cfg-progress').value.trim(),
+          kpi      : document.getElementById('cfg-kpi').value.trim(),
+        }
+      };
+      saveRuntimeConfig(cfg);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fillSettingsFormFromConfig();
+
+      // Khi bấm Lưu: ghi localStorage + áp dụng + tải lại dữ liệu
+      document.getElementById('cfg-save')?.addEventListener('click', () => {
+        readFormToRuntimeConfig();      // lưu vào localStorage + merge vào window.CONFIG
+        fillSettingsFormFromConfig();   // phản chiếu lại form (nếu có chuẩn hoá)
+        refreshAll();                   // <-- tải lại Documents, Progress, KPI, Repo label...
+      });
+
+      // Nút Xoá cấu hình: quay về mặc định + tải lại
+      document.getElementById('cfg-clear')?.addEventListener('click', () => {
+        clearRuntimeConfig();
+        fillSettingsFormFromConfig();
+        refreshAll();                   // <-- không cần F5
+      });
+
+      // Nút Tải lại dữ liệu: cho cảm giác “refresh” tức thì
+      document.getElementById('cfg-reload')?.addEventListener('click', () => {
+        readFormToRuntimeConfig();
+        refreshAll();
+      });
+    });
+
+  </script>
+</body>
+</html>
